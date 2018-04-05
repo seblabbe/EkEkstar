@@ -1334,6 +1334,17 @@ def Minkowski_projection_pair(self, B=None, prec=None):
     r"""
     Return the projections to the expanding and contracting spaces.
 
+    It describes the images of the vectors in ``B`` as matrix columns.
+
+    INPUT:
+
+    - ``B`` -- vector (default:``None``), the basis. If ``None``, the
+      default basis is `\{1,\alpha, ..., \alpha^{n-1}\}`.
+    - ``prec`` -- integer (default:``None``), the precision. The
+      computations will use ``RealField(prec)`` or ``RDF`` if ``prec`` is
+      ``None`` or the field of algebraic numbers ``QQbar`` (or it subfield
+      ``AA`` of algebraic reals) if ``prec`` is infinity.
+
     OUTPUT:
     
     - tuple (A, B) of matrices
@@ -1364,6 +1375,26 @@ def Minkowski_projection_pair(self, B=None, prec=None):
         3.382975767906237494122708536521],
         [  1.00000000000000 -0.419643377607080 -0.191487883953119]
         [ 0.000000000000000  0.606290729207199 -0.508851778832738]
+        )
+
+    Tribo, projection in the field of algebraic numbers with ``prec=oo``::
+
+        sage: Minkowski_projection_pair(F, prec=oo)
+        (
+        [                   1 1.839286755214161? 3.382975767906238?],
+
+        [                   1 -0.4196433776070806? -0.1914878839531188?]
+        [                   0  0.6062907292071993? -0.5088517788327380?]
+        )
+
+    ::
+
+        sage: F.<alpha> = NumberField(x^3-x-1)
+        sage: Minkowski_projection_pair(F)
+        (
+        [1.000000000000000000000000000000 1.324717957244746025960912521898 1.754877666246692760049518612953],
+        [  1.00000000000000 -0.662358978622373  0.122561166876654]
+        [ 0.000000000000000  0.562279512062301 -0.744861766619744]
         )
 
     """
