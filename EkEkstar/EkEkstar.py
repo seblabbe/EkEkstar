@@ -15,15 +15,26 @@ AUTHORS:
 
 .. TODO::
 
-    - Clean method kFace._plot(geosub) so that it takes projection
-      information (like vectors or matrix or ...) instead of the geosub
-
     - Fix some proper ordering for the faces (problems with doctests).
 
     - Patch should check that all its faces are consistent (same type
       length, dual or not, ambiant dimension)
 
     - Return an error if dual geosub is applied to not dual faces
+
+    - Put a default projection inside the patch (from the geosub)
+
+    - Add a function that creates the tiling
+
+    - Add a method taking a substitution as input, computing the Markov
+      partition (3d-cylinder of Rauzy fractals) from E_k and E_k^*, 
+
+    - Deal with reducible with neutral eigenvalues
+
+    - Deal with neutral eigenvalues in the Minkowski projection function
+
+    - Add this example (Hokaido): 1->12, 2->3, 3->4, 4->5, 5->1, an
+      reducible substitution with neutral eigenvalues.
 
 EXAMPLES::
 
@@ -39,6 +50,22 @@ EXAMPLES::
     Patch of 47 faces
     sage: M = geosub.projection()
     sage: _ = Q.plot(M)
+
+Fix this::
+
+    sage: sub = {1:[1,2], 2:[3], 3:[4], 4:[5], 5:[1]}
+    sage: geosub = GeoSub(sub, 3, dual=True)
+    sage: F = kFace((0,0,0,0,0), (1,2,3))
+    sage: P = 1*F
+    sage: P
+    Patch: 1[(0, 0, 0, 0, 0), (1, 2, 3)]
+    sage: Q = geosub(P, 5)
+    sage: Q
+    Patch: -1[(1, 1, 0, 0, 0), (1, 2, 4)]* + 1[(1, 1, 0, 0, 0), (1, 2, 5)]* + 1[(1, 1, 0, 0, 0), (1, 2, 3)]*
+    sage: M = geosub.projection()
+    Traceback (most recent call last):
+    ...
+    ValueError: number of columns does not match up with specified number
 
 REMAINDER:
 
