@@ -36,7 +36,9 @@ AUTHORS:
     - Add this example (Hokaido): 1->12, 2->3, 3->4, 4->5, 5->1, an
       reducible substitution with neutral eigenvalues.
 
-EXAMPLES::
+EXAMPLES:
+
+The Tribonacci example::
 
     sage: from EkEkstar import GeoSub, kPatch, kFace
     sage: sub = {1:[1,2], 2:[1,3], 3:[1]}
@@ -51,21 +53,19 @@ EXAMPLES::
     sage: M = geosub.projection()
     sage: _ = Q.plot(M)
 
-Fix this::
+Hokaido example::
 
     sage: sub = {1:[1,2], 2:[3], 3:[4], 4:[5], 5:[1]}
     sage: geosub = GeoSub(sub, 3, dual=True)
-    sage: F = kFace((0,0,0,0,0), (1,2,3))
+    sage: F = kFace((0,0,0,0,0), (1,2,3), dual=True)
     sage: P = 1*F
     sage: P
-    Patch: 1[(0, 0, 0, 0, 0), (1, 2, 3)]
+    Patch: 1[(0, 0, 0, 0, 0), (1, 2, 3)]*
     sage: Q = geosub(P, 5)
     sage: Q
     Patch: -1[(1, 1, 0, 0, 0), (1, 2, 4)]* + 1[(1, 1, 0, 0, 0), (1, 2, 5)]* + 1[(1, 1, 0, 0, 0), (1, 2, 3)]*
     sage: M = geosub.projection()
-    Traceback (most recent call last):
-    ...
-    ValueError: number of columns does not match up with specified number
+    sage: _ = Q.plot(M)
 
 REMAINDER:
 
@@ -382,29 +382,34 @@ class kFace(SageObject):
             [(0, 0, 0), (1, 0, 0), (1, 0, 1), (0, 0, 1)]
             sage: kFace((0,0,0),(2,3), dual=True).contour()
             [(0, 0, 0), (1, 0, 0)]
-        """
-        if self.face_dimension() not in [1,2]:
-            raise NotImplementedError("Plotting is implemented only for "
-                    "face in two or three dimensions, not "
-                    "{}".format(self.face_dimension()))
 
+        A 2-dimensional dual face in `\RR^5`::
+
+            sage: F = kFace((0,0,0,0,0), (1,2,3), dual=True)
+            sage: F
+            [(0, 0, 0, 0, 0), (1, 2, 3)]*
+            sage: F.contour()
+            [(0, 0, 0, 0, 0), (0, 0, 0, 1, 0), (0, 0, 0, 1, 1), (0, 0, 0, 0, 1)]
+
+        """
         v = self.vector()
         R = ZZ**self.dimension()
         e = {i+1:gen for i,gen in enumerate(R.gens())}
+        if self.is_dual():
+            indices = range(1, self.dimension()+1)
+            t = set(indices) - set(self.type())
+        else:
+            t = self.type()
         if self.face_dimension() == 1:
-            if self.is_dual():
-                a,b = self.type()
-                c, = set([1,2,3]) - set([a,b])
-            else:
-                c, = self.type()
+            c, = t
             return [v, v+e[c]]
         elif self.face_dimension() == 2:
-            if self.is_dual():
-                c, = self.type()
-                a,b = set([1,2,3]) - set([c])
-            else:
-                a,b = self.type()
+            a,b = t
             return [v, v+e[a], v+e[a]+e[b], v+e[b]]
+        else:
+            raise NotImplementedError("Contour is implemented only for "
+                    "face that are 1-dimensional edges or 2-dimensional,"
+                    " {}-dimensional".format(self.face_dimension()))
 
     def contour_projection(self, M): 
         r"""
@@ -964,6 +969,13 @@ class GeoSub(SageObject):
             sage: E = GeoSub(sub,2)
             sage: E.field()
             Number Field in b with defining polynomial x^3 - x^2 - x - 1
+
+        When the characteristic polynomial is reducible (Hokaido example)::
+
+            sage: sub = {1:[1,2], 2:[3], 3:[4], 4:[5], 5:[1]}
+            sage: geosub = GeoSub(sub, 3, dual=True)
+            sage: geosub.field()
+            Number Field in b with defining polynomial x^3 - x - 1
         """
         M = self._sigma.incidence_matrix()
         b1 = max(M.eigenvalues(), key=abs)
@@ -1264,6 +1276,15 @@ def Minkowski_embedding_without_sqrt2(self, B=None, prec=None):
     This method is a modification of the ``Minkowski_embedding`` method of
     NumberField in sage (without sqrt2).
 
+    INPUT:
+
+    - ``B`` -- vector (default:``None``), the basis. If ``None``, the
+      default basis is `\{1,\alpha, ..., \alpha^{n-1}\}`.
+    - ``prec`` -- integer (default:``None``), the precision. The
+      computations will use ``RealField(prec)`` or ``RDF`` if ``prec`` is
+      ``None`` or the field of algebraic numbers ``QQbar`` (or it subfield
+      ``AA`` of algebraic reals) if ``prec`` is infinity.
+
     EXAMPLES::
 
         sage: from EkEkstar.EkEkstar import Minkowski_embedding_without_sqrt2
@@ -1284,6 +1305,13 @@ def Minkowski_embedding_without_sqrt2(self, B=None, prec=None):
         [0.740078950105127]
         [ 2.62996052494744]
         [ 1.09112363597172]
+
+    The input vector may have arbitrary length::
+
+        sage: Minkowski_embedding_without_sqrt2(F, [1, alpha, alpha^2, 1-alpha])
+        [  1.00000000000000  -1.25992104989487   1.58740105196820  2.25992104989487]
+        [  1.00000000000000  0.629960524947437 -0.793700525984099 0.370039475052563]
+        [ 0.000000000000000   1.09112363597172   1.37472963699860 -1.09112363597172]
 
     Tribo::
 
@@ -1366,6 +1394,16 @@ def Minkowski_projection_pair(self, B=None, prec=None):
         [0.000000000000000  1.09112363597172 0.283606001026881], []
         )
 
+    The input vector may have arbitrary length::
+
+        sage: Minkowski_projection_pair(F, [1, alpha, alpha^2, 1-alpha])
+        (
+        [  1.00000000000000  -1.25992104989487   1.58740105196820   2.25992104989487]
+        [  1.00000000000000  0.629960524947437 -0.793700525984099  0.370039475052563]
+        [ 0.000000000000000   1.09112363597172   1.37472963699860  -1.09112363597172],
+        []
+        )
+
     Tribo::
 
         sage: F.<beta> = NumberField(x^3-x^2-x-1)
@@ -1381,8 +1419,8 @@ def Minkowski_projection_pair(self, B=None, prec=None):
 
         sage: Minkowski_projection_pair(F, prec=oo)
         (
-        [                   1 1.839286755214161? 3.382975767906238?],
-
+        [                 1 1.839286755214161? 3.382975767906238?],
+        <BLANKLINE>
         [                   1 -0.4196433776070806? -0.1914878839531188?]
         [                   0  0.6062907292071993? -0.5088517788327380?]
         )
@@ -1438,6 +1476,6 @@ def Minkowski_projection_pair(self, B=None, prec=None):
             raise NotImplementedError
 
     from sage.matrix.constructor import matrix
-    return (matrix(len(rows_expanding), self.degree(), rows_expanding), 
-            matrix(len(rows_contracting), self.degree(), rows_contracting))
+    return (matrix(rows_expanding),
+            matrix(rows_contracting))
 
