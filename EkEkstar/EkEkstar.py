@@ -22,7 +22,7 @@ AUTHORS:
 
     - Return an error if dual geosub is applied to not dual faces
 
-    - Put a default projection inside the patch (from the geosub)
+    X Put a default projection inside the patch (from the geosub)
 
     - Add a function that creates the tiling
 
@@ -31,9 +31,9 @@ AUTHORS:
 
     - Deal with reducible with neutral eigenvalues
 
-    - Deal with neutral eigenvalues in the Minkowski projection function
+    X Deal with neutral eigenvalues in the Minkowski projection function
 
-    - Add this example (Hokaido): 1->12, 2->3, 3->4, 4->5, 5->1, an
+    X Add this example (Hokaido): 1->12, 2->3, 3->4, 4->5, 5->1, an
       reducible substitution with neutral eigenvalues.
 
 EXAMPLES:
@@ -50,8 +50,10 @@ The Tribonacci example::
     sage: Q = geosub(P, 6)
     sage: Q
     Patch of 47 faces
-    sage: M = geosub.projection()
-    sage: _ = Q.plot(M)
+    sage: _ = Q.plot()
+    sage: Q.projection_matrix()
+    [  1.00000000000000  -1.41964337760708 -0.771844506346038]
+    [ 0.000000000000000  0.606290729207199  -1.11514250803994]
 
 Hokaido example::
 
@@ -64,8 +66,10 @@ Hokaido example::
     sage: Q = geosub(P, 5)
     sage: Q
     Patch: -1[(1, 1, 0, 0, 0), (1, 2, 4)]* + 1[(1, 1, 0, 0, 0), (1, 2, 5)]* + 1[(1, 1, 0, 0, 0), (1, 2, 3)]*
-    sage: M = geosub.projection()
-    sage: _ = Q.plot(M)
+    sage: _ = Q.plot()
+    sage: Q.projection_matrix()
+    [  1.00000000000000  -1.66235897862237  0.784920145499027 0.215079854500973 -0.877438833123346]
+    [ 0.000000000000000  0.562279512062301  -1.30714127868205 1.30714127868205  -0.744861766619744]
 
 REMAINDER:
 
@@ -424,7 +428,7 @@ class kFace(SageObject):
             sage: from EkEkstar import kFace, GeoSub
             sage: sub = {1:[1,2], 2:[1,3], 3:[1]}
             sage: geosub = GeoSub(sub,2, dual=True)
-            sage: M = geosub.projection()
+            sage: M = geosub.projection_matrix()
 
         This illustrates the case with faces of dimension 1 with a field
         with one complex embedding::
@@ -457,7 +461,7 @@ class kFace(SageObject):
 
             sage: sub = {1: [1,3,2,3], 2: [2,3], 3: [3,2,3,1,3,2,3]}
             sage: geosub = GeoSub(sub, 2, dual=True)
-            sage: M = geosub.projection()
+            sage: M = geosub.projection_matrix()
             sage: kFace((10,21,33), (1,2), dual=True).contour_projection(M)
             [(6.690365529225190287265975075034, -1.500190036950057598982635871389),
              (5.443385925507723226215965307025, -1.055148169037428790404830742396)]
@@ -467,7 +471,7 @@ class kFace(SageObject):
 
             sage: sub = {1:[1,2,3,3,3,3], 2:[1,3], 3:[1]}
             sage: geosub = GeoSub(sub,2, dual=True)
-            sage: M = geosub.projection()
+            sage: M = geosub.projection_matrix()
             sage: kFace((7,-3,4),(1,2), dual=True).contour_projection(M)
             [(-65.28494960003319740280849294991),
              (-70.02977567771512068843031399068)]
@@ -480,7 +484,7 @@ class kFace(SageObject):
             ....:   3:[1,2,4,1,3,4,], 
             ....:   4:[1,2,4,1,2,4,1,3,4,1,4]}
             sage: geosub = GeoSub(sub, 2)
-            sage: M = geosub.projection()
+            sage: M = geosub.projection_matrix()
             sage: kFace((10,21,33,-7), (1,2)).contour_projection(M)
             [(21.18350167207436655863368355998, -150.7254323268995855552615832997),
              (20.18350167207436655863368355998, -151.7254323268995855552615832997),
@@ -492,7 +496,7 @@ class kFace(SageObject):
 
             sage: sub = {1:[1,2,4], 2:[1,2,2,4], 3:[1,2,4,3,3,4], 4:[1,2,4,3,4]}
             sage: geosub = GeoSub(sub, 2)
-            sage: M = geosub.projection()
+            sage: M = geosub.projection_matrix()
             sage: kFace((10,21,33,-7), (1,2)).contour_projection(M)
             [(32.57858448022453517201706283181, -112.0669861296918881523709190477),
              (31.57858448022453517201706283181, -113.0669861296918881523709190477),
@@ -505,7 +509,7 @@ class kFace(SageObject):
 
             sage: sub = {1: [1,3,2,3], 2: [2,3], 3: [3,2,3,1,3,2,3]}
             sage: geosub = GeoSub(sub, 2)
-            sage: M = geosub.projection()
+            sage: M = geosub.projection_matrix()
             sage: kFace((10,13,27), (1,2)).contour_projection(M)
             [(-64.43786314959480732826099193032),
              (-65.43786314959480732826099193032),
@@ -527,8 +531,8 @@ class kFace(SageObject):
             sage: from EkEkstar import kFace, GeoSub
             sage: sub = {1:[1,2], 2:[1,3], 3:[1]}
             sage: geosub = GeoSub(sub,2, dual=True)
-            sage: M = geosub.projection()
-            sage: _ = kFace((10,21,33), (1,2), dual=True).plot(M)  # case C
+            sage: M = geosub.projection_matrix()
+            sage: _ = kFace((10,21,33), (1,2), dual=True).plot(M)
         """
         if color is None:
             color = self._color
@@ -586,6 +590,9 @@ class kPatch(SageObject):
         for f,m in self._faces.items():
             if m == 0:
                 del self._faces[f]
+
+        # Default projection matrix
+        self._projection_matrix = None
             
     def __len__(self):
         return len(self._faces)
@@ -736,6 +743,39 @@ class kPatch(SageObject):
         else:
             return f0.dimension()
 
+    def projection_matrix(self, M=None):
+        r"""
+        Set or get the default projection matrix
+
+        INPUT:
+
+        - ``M`` -- projection matrix or ``None``
+
+        OUTPUT:
+
+        - ``None`` or a matrix
+
+        EXAMPLES::
+
+            sage: from EkEkstar import kFace, kPatch
+            sage: P = kPatch([kFace((0,0,0),(1,2),dual=True),
+            ....:             kFace((0,0,0),(3,1),dual=True)])
+            sage: P.projection_matrix() is None
+            True
+            sage: L = [-0.866025403784439, 0.866025403784439, 0.000000000000000,
+            ....:      -0.500000000000000, -0.500000000000000, 1.00000000000000]
+            sage: M = matrix(2, L)
+            sage: P.projection_matrix(M)
+            sage: P.projection_matrix()
+            [-0.866025403784439  0.866025403784439  0.000000000000000]
+            [-0.500000000000000 -0.500000000000000   1.00000000000000]
+
+        """
+        if M is None:
+            return self._projection_matrix
+        else:
+            self._projection_matrix = M
+
     def __repr__(self):
         r"""
         EXAMPLES::
@@ -807,11 +847,12 @@ class kPatch(SageObject):
         else:
             return self + kPatch(other)
         
-    def plot(self, M, color=None):
+    def plot(self, M=None, color=None):
         r"""
         INPUT:
 
-        - ``M`` -- projection matrix
+        - ``M`` -- projection matrix or ``None``. If ``None``, it uses the
+          default projection matrix.
         - ``color`` -- string or None
 
         EXAMPLES::
@@ -823,27 +864,33 @@ class kPatch(SageObject):
             ....:             kFace((0,0,1),(1,3),dual=True),
             ....:             kFace((0,1,0),(2,1),dual=True),
             ....:             kFace((0,0,0),(3,1),dual=True)])
-            sage: M = geosub.projection()
+            sage: M = geosub.projection_matrix()
             sage: _ = P.plot(M)
+
+        A patch created from the application of a geometric substitution
+        remembers the canonical projection matrix of the geo. subst. as its
+        default projection. So plot may be called with no argument::
+
+            sage: Q = geosub(P)
+            sage: _ = Q.plot()
+
+        The default projection matrix in this case is::
+
+            sage: Q.projection_matrix()
+            [  1.00000000000000  -1.41964337760708 -0.771844506346038]
+            [ 0.000000000000000  0.606290729207199  -1.11514250803994]
+
         """
+        if M is None:
+            M = self.projection_matrix()
+            if M is None:
+                raise ValueError('No default projection matrix was given. '
+                        'You need to provide one as input.')
         G = Graphics()
         for face,m in self:
             G += face.plot(M, color)
         G.set_aspect_ratio(1)
         return G
-              
-        #if self.dimension() == 2:
-        #    G = Graphics()
-        #    for face in self:
-        #        G += face._plot(None, None, 1)
-        #    G.set_aspect_ratio(1)
-        #    return G
-        #if self.dimension() == 3:
-        #    if projmat is None:
-        #        projmat = matrix(2, [-1.7320508075688772*0.5, 1.7320508075688772*0.5, 0, -0.5, -0.5, 1])
-            
-     
-             
 
 def ps_automaton(sub, presuf):
     r"""
@@ -1093,7 +1140,7 @@ class GeoSub(SageObject):
             vb = -self.dominant_left_eigenvector() 
         return Minkowski_embedding_without_sqrt2(K, vb)
 
-    def projection(self, prec=None):
+    def projection_matrix(self, prec=None):
         r"""
         Return the Minkowski projection to the contracting (or expanding)
         space.
@@ -1109,15 +1156,15 @@ class GeoSub(SageObject):
 
             sage: from EkEkstar import GeoSub
             sage: sub = {1:[1,2], 2:[1,3], 3:[1]}
-            sage: GeoSub(sub, 2).projection()      # tol
+            sage: GeoSub(sub, 2).projection_matrix()      # tol
             [ -1.00000000000000 -0.839286755214161 -0.543689012692076]
-            sage: GeoSub(sub, 2, dual=True).projection()
+            sage: GeoSub(sub, 2, dual=True).projection_matrix()
             [  1.00000000000000  -1.41964337760708 -0.771844506346038]
             [ 0.000000000000000  0.606290729207199  -1.11514250803994]
 
         With algebraic coefficients::
 
-            sage: GeoSub(sub, 2, dual=True).projection(prec=oo)
+            sage: GeoSub(sub, 2, dual=True).projection_matrix(prec=oo)
             [                   1  -1.419643377607081?  -0.7718445063460381?]
             [                   0  0.6062907292071993?   -1.115142508039938?]
 
@@ -1203,6 +1250,9 @@ class GeoSub(SageObject):
                 for f,m in old_faces:
                     new_faces += m * kPatch(self._call_on_face(f, color=f.color()))
                 old_faces = new_faces
+            # Set the default projection matrix of the patch to the
+            # projection matrix of this geometric substitution
+            new_faces.projection_matrix(self.projection_matrix())
             return new_faces
 
     def matrix(self):
