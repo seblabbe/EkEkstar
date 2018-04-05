@@ -23,6 +23,8 @@ AUTHORS:
     - Patch should check that all its faces are consistent (same type
       length, dual or not, ambiant dimension)
 
+    - Return an error if dual geosub is applied to not dual faces
+
 EXAMPLES::
 
     sage: from EkEkstar import GeoSub, kPatch, kFace
@@ -35,7 +37,8 @@ EXAMPLES::
     sage: Q = geosub(P, 6)
     sage: Q
     Patch of 47 faces
-    sage: _ = Q.plot(geosub)
+    sage: M = geosub.projection()
+    sage: _ = Q.plot(M)
 
 REMAINDER:
 
@@ -330,7 +333,7 @@ class kFace(SageObject):
         return kFace(self.vector(), self.type(), dual=not self.is_dual(), 
                      color=self.color())
 
-    def face_contour(self):
+    def contour(self):
         r"""
         Return the face contour.
 
@@ -344,13 +347,13 @@ class kFace(SageObject):
         EXAMPLES::
 
             sage: from EkEkstar import kFace
-            sage: kFace((0,0,0),(1,3)).face_contour()
+            sage: kFace((0,0,0),(1,3)).contour()
             [(0, 0, 0), (1, 0, 0), (1, 0, 1), (0, 0, 1)]
-            sage: kFace((0,0,0),(2,)).face_contour()
+            sage: kFace((0,0,0),(2,)).contour()
             [(0, 0, 0), (0, 1, 0)]
-            sage: kFace((0,0,0),(2,), dual=True).face_contour()
+            sage: kFace((0,0,0),(2,), dual=True).contour()
             [(0, 0, 0), (1, 0, 0), (1, 0, 1), (0, 0, 1)]
-            sage: kFace((0,0,0),(2,3), dual=True).face_contour()
+            sage: kFace((0,0,0),(2,3), dual=True).contour()
             [(0, 0, 0), (1, 0, 0)]
         """
         if self.face_dimension() not in [1,2]:
@@ -376,8 +379,10 @@ class kFace(SageObject):
                 a,b = self.type()
             return [v, v+e[a], v+e[a]+e[b], v+e[b]]
 
-    def new_proj(self, M): 
+    def contour_projection(self, M): 
         r"""
+        Return the projection of the face contour.
+
         INPUT:
 
         - ``M`` -- projection matrix
@@ -388,10 +393,18 @@ class kFace(SageObject):
             sage: sub = {1:[1,2], 2:[1,3], 3:[1]}
             sage: geosub = GeoSub(sub,2, dual=True)
             sage: M = geosub.projection()
-            sage: kFace((10,21,33), (1,2), dual=True).new_proj(M)  # case C
+
+        This illustrates the case with faces of dimension 1 with a field
+        with one complex embedding::
+
+            sage: kFace((10,21,33), (1,2), dual=True).contour_projection(M)
             [(-45.2833796391679, -24.0675974519667),
              (-46.0552241455140, -25.1827399600067)]
-            sage: kFace((10,21,33), (1,), dual=True).new_proj(M)   # case E
+
+        This illustrates the case with faces of dimension 2 with a field
+        with one complex embedding::
+
+            sage: kFace((10,21,33), (1,), dual=True).contour_projection(M)
             [(-45.2833796391679, -24.0675974519667),
              (-46.7030230167750, -23.4613067227595),
              (-47.4748675231211, -24.5764492307995),
@@ -407,37 +420,70 @@ class kFace(SageObject):
             sage: sub
             WordMorphism: 1->1323, 2->23, 3->3231323
 
-        Case B::
+        This illustrates the case with faces of dimension 1 with totally
+        real field projected in a contracting space of dimension 2::
 
             sage: sub = {1: [1,3,2,3], 2: [2,3], 3: [3,2,3,1,3,2,3]}
             sage: geosub = GeoSub(sub, 2, dual=True)
             sage: M = geosub.projection()
-            sage: kFace((10,21,33), (1,2), dual=True).new_proj(M)  # case B
+            sage: kFace((10,21,33), (1,2), dual=True).contour_projection(M)
             [(6.690365529225190287265975075034, -1.500190036950057598982635871389),
              (5.443385925507723226215965307025, -1.055148169037428790404830742396)]
 
-        Case A::
+        This illustrates the case with faces of dimension 1 with totally
+        real field projected in a contracting space of dimension 1::
 
             sage: sub = {1:[1,2,3,3,3,3], 2:[1,3], 3:[1]}
             sage: geosub = GeoSub(sub,2, dual=True)
             sage: M = geosub.projection()
-            sage: kFace((0,0,0),(1,2), dual=True).new_proj(M)      # case A
-            [(0.0000000000000000000000000000000),
-             (-4.744826077681923285621821040766)]
+            sage: kFace((7,-3,4),(1,2), dual=True).contour_projection(M)
+            [(-65.28494960003319740280849294991),
+             (-70.02977567771512068843031399068)]
 
-        Case D::
+        This illustrates the case with faces of dimension 2 with a field
+        with one complex embedding::
 
-            sage: #kFace((10,21,33), (1,2)).new_proj(geosub)            # case D (broken)
+            sage: sub = {1:[1,1,4], 
+            ....:   2:[1,2,4,1,2,4,1,3,4], 
+            ....:   3:[1,2,4,1,3,4,], 
+            ....:   4:[1,2,4,1,2,4,1,3,4,1,4]}
+            sage: geosub = GeoSub(sub, 2)
+            sage: M = geosub.projection()
+            sage: kFace((10,21,33,-7), (1,2)).contour_projection(M)
+            [(21.18350167207436655863368355998, -150.7254323268995855552615832997),
+             (20.18350167207436655863368355998, -151.7254323268995855552615832997),
+             (21.08776078027425227765222077178, -155.8643948778810657648963968540),
+             (22.08776078027425227765222077178, -154.8643948778810657648963968540)]
 
-        Larger dimension::
+        This illustrates the case with faces of dimension 2 in a
+        totally real field::
 
-            sage: print('add larger dimension example')
-            TODO
+            sage: sub = {1:[1,2,4], 2:[1,2,2,4], 3:[1,2,4,3,3,4], 4:[1,2,4,3,4]}
+            sage: geosub = GeoSub(sub, 2)
+            sage: M = geosub.projection()
+            sage: kFace((10,21,33,-7), (1,2)).contour_projection(M)
+            [(32.57858448022453517201706283181, -112.0669861296918881523709190477),
+             (31.57858448022453517201706283181, -113.0669861296918881523709190477),
+             (29.38505739489348123345652443465, -114.3619490289834872642844850711),
+             (30.38505739489348123345652443465, -113.3619490289834872642844850711)]
+
+        The next example illustrates the case where the dilating space is
+        of dimension one (Pisot case) and the faces are of dimension 2 in
+        R^3 so the faces are projected on a one-dimensional space::
+
+            sage: sub = {1: [1,3,2,3], 2: [2,3], 3: [3,2,3,1,3,2,3]}
+            sage: geosub = GeoSub(sub, 2)
+            sage: M = geosub.projection()
+            sage: kFace((10,13,27), (1,2)).contour_projection(M)
+            [(-64.43786314959480732826099193032),
+             (-65.43786314959480732826099193032),
+             (-65.88290501750743613683879705932),
+             (-64.88290501750743613683879705932)]
 
         """
-        return [M*c for c in self.face_contour()]
+        return [M*c for c in self.contour()]
 
-    def _new_plot(self, M, color=None):
+    def plot(self, M, color=None):
         r"""
         INPUT:
 
@@ -450,220 +496,17 @@ class kFace(SageObject):
             sage: sub = {1:[1,2], 2:[1,3], 3:[1]}
             sage: geosub = GeoSub(sub,2, dual=True)
             sage: M = geosub.projection()
-            sage: _ = kFace((10,21,33), (1,2), dual=True)._new_plot(M)  # case C
+            sage: _ = kFace((10,21,33), (1,2), dual=True).plot(M)  # case C
         """
         if color is None:
             color = self._color
-        L = self.new_proj(M)
+        L = self.contour_projection(M)
         if self.face_dimension() == 1:
             return line(L, color=color, thickness=3) 
         elif self.face_dimension() == 2:
             return polygon2d(L, color=color, thickness=.1, alpha=.8)     
         else:
             raise NotImplementedError("Plotting is implemented only for patches in two or three dimensions.")
-
-    def milton_proj(self, geosub):
-        r"""
-        EXAMPLES::
-
-            sage: from EkEkstar import kFace, GeoSub
-            sage: sub = {1:[1,2], 2:[1,3], 3:[1]}
-            sage: geosub = GeoSub(sub,2, dual=True)
-            sage: kFace((10,21,33), (1,2), dual=True).milton_proj(geosub)  # case C
-            [-45.2833796391680 + 24.0675974519667*I,
-             -46.0552241455140 + 25.1827399600067*I]
-            sage: kFace((10,21,33), (1,), dual=True).milton_proj(geosub)   # case E
-            [[-45.2833796391680, 24.0675974519667],
-             [-46.7030230167750, 23.4613067227595],
-             [-47.4748675231211, 24.5764492307995],
-             [-46.0552241455140, 25.1827399600067]]
-
-        Brun substitutions ``[123,132,213,231]`` gives a incidence matrix with
-        totally real eigenvalues::
-
-            sage: from slabbe.mult_cont_frac import Brun
-            sage: algo = Brun()
-            sage: S = algo.substitutions()
-            sage: sub = prod([S[a] for a in [123,132,213,231]])
-            sage: sub
-            WordMorphism: 1->1323, 2->23, 3->3231323
-
-        Case B::
-
-            sage: sub = {1: [1,3,2,3], 2: [2,3], 3: [3,2,3,1,3,2,3]}
-            sage: geosub = GeoSub(sub, 2, dual=True)
-            sage: kFace((10,21,33), (1,2), dual=True).milton_proj(geosub)  # case B
-            [(6.69036552922519, -1.50019003695006),
-             (5.44338592550772, -1.05514816903743)]
-
-        Case A::
-
-            sage: sub = {1:[1,2,3,3,3,3], 2:[1,3], 3:[1]}
-            sage: geosub = GeoSub(sub,2, dual=True)
-            sage: kFace((0,0,0),(1,2), dual=True).milton_proj(geosub)      # case A
-            [0.000000000000000, -4.74482607768192]
-
-        Case D::
-
-            sage: #kFace((10,21,33), (1,2)).milton_proj(geosub)            # case D (broken)
-        """
-        v = self.vector()
-        t = self.type()
-        
-        K = geosub.field()
-        b = K.gen()
-                
-        num = geosub._sigma_dict.keys()
-        
-        if self.is_dual():
-            h = list(set(num)-set(t))
-            B = b
-            vec = geosub.dominant_left_eigenvector()
-            emb = geosub.contracting_eigenvalues_indices()
-        else:
-            h = list(t)
-            B = b**(-1)  # TODO: this seems useless (why?)
-            vec = -geosub.dominant_left_eigenvector() 
-            emb = geosub.dilating_eigenvalues_indices() 
-
-        el = v*vec
-        iter = 0
-
-        conjugates = geosub.complex_embeddings()
-
-        if len(h) == 1:
-            if conjugates[emb[0]].is_real() == True:
-                bp = zero_vector(CC, len(emb))
-                for i in range(len(emb)):
-                    bp[i] = K(el).complex_embeddings()[emb[i]]
-                bp1 = zero_vector(CC, len(emb))
-                for i in range(len(emb)):
-                    bp1[i] = K((el+vec[h[0]-1])).complex_embeddings()[emb[i]] 
-                if len(emb) == 1:
-                    #print "case A"
-                    return [bp[0],bp1[0]]
-                else: 
-                    #print "case B"
-                    return [bp,bp1]
-            else: 
-                bp = K(el).complex_embeddings()[emb[0]]
-                bp1 = K((el+vec[h[0]-1])).complex_embeddings()[emb[0]]
-                #print "case C"
-                return [bp,bp1]
-        elif len(h) == 2: 
-            if conjugates[emb[0]].is_real() == True:
-                bp = (  K(el).complex_embeddings()[emb[0]], 
-                        K(el).complex_embeddings()[emb[1]])
-                bp1 = ( K(el+vec[h[0]-1]).complex_embeddings()[emb[0]],
-                        K(el+vec[h[0]-1]).complex_embeddings()[emb[1]] )
-                bp2 = ( K(el+vec[h[0]-1]+vec[h[1]-1]).complex_embeddings()[emb[0]],
-                        K(el+vec[h[0]-1]+vec[h[1]-1]).complex_embeddings()[emb[1]])
-                bp3 = ( K(el+vec[h[1]-1]).complex_embeddings()[emb[0]],
-                        K(el+vec[h[1]-1]).complex_embeddings()[emb[1]])
-                #print "case D"
-                return [bp,bp1,bp2,bp3]
-            else:   
-                bp =  K(el).complex_embeddings()[emb[0]]
-                bp1 = K(el+vec[h[0]-1]).complex_embeddings()[emb[0]]
-                bp2 = K(el+vec[h[0]-1]+vec[h[1]-1]).complex_embeddings()[emb[0]]
-                bp3 = K(el+vec[h[1]-1]).complex_embeddings()[emb[0]]
-                #print "case E"
-                return [[bp[0],bp[1]],[bp1[0],bp1[1]],[bp2[0],bp2[1]],[bp3[0],bp3[1]]]
-            
-        else:
-            raise NotImplementedError("Projection is implemented only for patches in two or three dimensions.")
-
-
-    def _plot(self, geosub, color=None):
-        r"""
-        EXAMPLES::
-
-            sage: from EkEkstar import kFace, GeoSub
-            sage: sub = {1:[1,2], 2:[1,3], 3:[1]}
-            sage: geosub = GeoSub(sub,2, dual=True)
-            sage: _ = kFace((10,21,33), (1,))._plot(geosub)              # case A
-            sage: _ = kFace((10,21,33), (1,2), dual=True)._plot(geosub)  # case C
-            sage: _ = kFace((10,21,33), (1,), dual=True)._plot(geosub)   # case E
-
-        ::
-
-            sage: sub = {1: [1, 3, 2, 3], 2: [2, 3], 3: [3, 2, 3, 1, 3, 2, 3]}
-            sage: geosub = GeoSub(sub, 2, dual=True)
-            sage: _ = kFace((10,21,33), (1,2), dual=True)._plot(geosub)  # case B
-
-        ::
-
-            sage: sub = {1:[1,2,3,3,3,3], 2:[1,3], 3:[1]}
-            sage: geosub = GeoSub(sub,2, dual=True)
-            sage: _ = kFace((0,0,0),(1,2), dual=True)._plot(geosub)      # case A
-        """
-        v = self.vector()
-        t = self.type()
-        if color != None:
-            col = color
-        else:
-            col = self._color
-        G = Graphics()
-        
-        K = geosub.field()
-        b = K.gen()
-                
-        num = geosub._sigma_dict.keys()
-        
-        if self.is_dual():
-            h = list(set(num)-set(t))
-            B = b
-            vec = geosub.dominant_left_eigenvector()
-            emb = geosub.contracting_eigenvalues_indices()
-        else:
-            h = list(t)
-            B = b**(-1)  # TODO: this seems useless (why?)
-            vec = -geosub.dominant_left_eigenvector() 
-            emb = geosub.dilating_eigenvalues_indices() 
-        
-        el = v*vec
-        iter = 0
-
-        conjugates = geosub.complex_embeddings()
-
-        if len(h) == 1:
-            if conjugates[emb[0]].is_real() == True:
-                bp = zero_vector(CC, len(emb))
-                for i in range(len(emb)):
-                    bp[i] = K(el).complex_embeddings()[emb[i]]
-                bp1 = zero_vector(CC, len(emb))
-                for i in range(len(emb)):
-                    bp1[i] = K((el+vec[h[0]-1])).complex_embeddings()[emb[i]] 
-                if len(emb) == 1:
-                    return line([bp[0],bp1[0]],color = col,thickness = 3) 
-                else: 
-                    return line([bp,bp1],color = col,thickness = 3)      
-            else: 
-                bp = K(el).complex_embeddings()[emb[0]]
-                bp1 = K((el+vec[h[0]-1])).complex_embeddings()[emb[0]]
-                return line([bp,bp1],color = col,thickness = 3)
-        elif len(h) == 2: 
-            if conjugates[emb[0]].is_real() == True:
-                bp = (  K(el).complex_embeddings()[emb[0]], 
-                        K(el).complex_embeddings()[emb[1]])
-                bp1 = ( K(el+vec[h[0]-1]).complex_embeddings()[emb[0]],
-                        K(el+vec[h[0]-1]).complex_embeddings()[emb[1]] )
-                bp2 = ( K(el+vec[h[0]-1]+vec[h[1]-1]).complex_embeddings()[emb[0]],
-                        K(el+vec[h[0]-1]+vec[h[1]-1]).complex_embeddings()[emb[1]])
-                bp3 = ( K(el+vec[h[1]-1]).complex_embeddings()[emb[0]],
-                        K(el+vec[h[1]-1]).complex_embeddings()[emb[1]])
-                return polygon2d([bp,bp1,bp2,bp3],color=col,thickness=.1,alpha = 0.8)
-            else:   
-                bp =  K(el).complex_embeddings()[emb[0]]
-                bp1 = K(el+vec[h[0]-1]).complex_embeddings()[emb[0]]
-                bp2 = K(el+vec[h[0]-1]+vec[h[1]-1]).complex_embeddings()[emb[0]]
-                bp3 = K(el+vec[h[1]-1]).complex_embeddings()[emb[0]]
-                return polygon2d([[bp[0],bp[1]],[bp1[0],bp1[1]],[bp2[0],bp2[1]],[bp3[0],bp3[1]]],color=col,thickness=.1,alpha = 0.8)     
-            
-        else:
-            raise NotImplementedError("Plotting is implemented only for patches in two or three dimensions.")
-        return G
-
 
 class kPatch(SageObject):
     r"""
@@ -932,8 +775,13 @@ class kPatch(SageObject):
         else:
             return self + kPatch(other)
         
-    def plot(self, geosub, color=None):
+    def plot(self, M, color=None):
         r"""
+        INPUT:
+
+        - ``M`` -- projection matrix
+        - ``color`` -- string or None
+
         EXAMPLES::
 
             sage: from EkEkstar import kFace, kPatch, GeoSub
@@ -943,11 +791,12 @@ class kPatch(SageObject):
             ....:             kFace((0,0,1),(1,3),dual=True),
             ....:             kFace((0,1,0),(2,1),dual=True),
             ....:             kFace((0,0,0),(3,1),dual=True)])
-            sage: _ = P.plot(geosub)
+            sage: M = geosub.projection()
+            sage: _ = P.plot(M)
         """
         G = Graphics()
         for face,m in self:
-            G += face._plot(geosub,color)
+            G += face.plot(M, color)
         G.set_aspect_ratio(1)
         return G
               
